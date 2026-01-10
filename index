@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>顺丰电商退货模拟器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap');
+        body { font-family: 'Noto Sans SC', sans-serif; background-color: #f0f2f5; }
+        .iphone-frame { width: 375px; min-height: 780px; background: #f7f8fa; border: 8px solid #1a1a1a; border-radius: 40px; position: relative; overflow-y: auto; overflow-x: hidden; }
+        .iphone-frame::-webkit-scrollbar { display: none; }
+        .sf-tag { background: #e01f21; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+        .step-active { color: #000; font-weight: bold; }
+        .step-inactive { color: #999; }
+    </style>
+</head>
+<body class="p-4 flex flex-col items-center lg:flex-row lg:justify-center lg:items-start gap-10">
+
+    <div class="w-full max-w-md bg-white p-6 rounded-2xl shadow-lg">
+        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+            <span class="w-2 h-6 bg-red-600 rounded-full"></span> 模拟器参数设置
+        </h2>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm text-gray-500 mb-1">模拟平台风格</label>
+                <select v-model="platform" class="w-full border p-2 rounded-lg bg-gray-50">
+                    <option value="pdd">拼多多风格 (图1)</option>
+                    <option value="jd">京东服务单 (图2)</option>
+                    <option value="tb">淘宝自行寄回 (图4)</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-500 mb-1">收件人姓名</label>
+                    <input v-model="form.name" class="w-full border p-2 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-500 mb-1">联系电话</label>
+                    <input v-model="form.phone" class="w-full border p-2 rounded-lg">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm text-gray-500 mb-1">详细地址</label>
+                <textarea v-model="form.address" class="w-full border p-2 rounded-lg h-20 text-sm"></textarea>
+            </div>
+
+            <div>
+                <label class="block text-sm text-gray-500 mb-1">倒计时提示</label>
+                <input v-model="form.timer" class="w-full border p-2 rounded-lg">
+            </div>
+
+            <button @click="saveImage" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-red-700 transition active:scale-95">
+                生成并导出截图
+            </button>
+        </div>
+    </div>
+
+    <div id="app" class="relative">
+        <div id="capture-area" class="iphone-frame shadow-2xl">
+            
+            <div class="flex justify-between items-center px-8 py-3 text-xs font-bold">
+                <span>08:47</span>
+                <div class="flex gap-1">📶 5G 🔋 98%</div>
+            </div>
+
+            <div v-if="platform === 'pdd'" class="animate-in fade-in">
+                <div class="bg-white px-4 py-3 flex items-center justify-between border-b">
+                    <span class="text-lg">〈</span>
+                    <span class="font-bold">退货详情</span>
+                    <span class="text-lg">...</span>
+                </div>
+                <div class="p-5 bg-white mb-2">
+                    <h3 class="text-2xl font-bold">请寄回商品</h3>
+                    <p class="text-sm text-gray-500 mt-1">商家已同意退货，请您在 <span class="text-red-500 font-medium">{{form.timer}}</span> 内寄回商品</p>
+                </div>
+                <div class="mx-3 my-2 p-4 bg-white rounded-2xl shadow-sm border border-gray-50">
+                    <div class="text-gray-400 text-sm mb-3">商家地址信息</div>
+                    <div class="text-[15px] font-medium leading-relaxed">
+                        {{form.name}} <span class="ml-2">{{form.phone}}</span><br>
+                        <span class="text-gray-600">{{form.address}}</span>
+                    </div>
+                    <div class="text-right mt-3 text-blue-500 text-sm font-medium">复制</div>
+                </div>
+                <div class="mx-3 p-4 bg-white rounded-2xl flex justify-between items-center mt-4">
+                    <div>
+                        <div class="font-bold text-gray-800">上门取件/驿站</div>
+                        <div class="text-xs text-gray-400 mt-1">免填地址 · 极速退款</div>
+                    </div>
+                    <button class="bg-[#ff1255] text-white px-5 py-2 rounded-full text-sm font-bold">我要寄件</button>
+                </div>
+            </div>
+
+            <div v-if="platform === 'jd'" class="animate-in slide-in-from-right">
+                <div class="bg-white p-4 flex items-center gap-4">
+                    <span class="text-xl">〈</span>
+                    <span class="font-bold">服务单详情</span>
+                </div>
+                <div class="bg-gradient-to-r from-[#ff5e3a] to-[#ff2a2a] p-6 text-white">
+                    <div class="text-xl font-bold">请您发货</div>
+                    <div class="text-xs mt-2 opacity-90 leading-normal">
+                        请您尽快发货并填写运单号，如未及时填写 服务将在 <span class="font-bold underline">{{form.timer}}</span> 后关闭
+                    </div>
+                </div>
+                <div class="m-3 bg-white rounded-xl p-4 shadow-sm">
+                    <div class="flex justify-between items-center mb-4 border-b pb-2">
+                        <span class="font-bold text-gray-800">商品回寄信息</span>
+                        <span class="text-xs text-gray-400 border px-2 py-0.5 rounded-full">收起 ⌃</span>
+                    </div>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex"><span class="w-16 text-gray-400">寄回地址</span><span class="flex-1 ml-2">{{form.address}}</span></div>
+                        <div class="flex"><span class="w-16 text-gray-400">收件人</span><span class="flex-1 ml-2">{{form.name}}</span></div>
+                        <div class="flex"><span class="w-16 text-gray-400">联系电话</span><span class="flex-1 ml-2">{{form.phone}}</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="platform === 'tb'" class="animate-in zoom-in">
+                <div class="p-4 bg-white flex items-center justify-between">
+                    <span class="text-xl">←</span>
+                    <div class="flex items-center gap-1 text-[10px]">
+                        <span class="step-inactive">商家处理</span> <span>▸</span>
+                        <span class="step-active">2 寄回商品</span> <span>▸</span>
+                        <span class="step-inactive">3 退款成功</span>
+                    </div>
+                    <span class="font-bold text-lg">...</span>
+                </div>
+                <div class="bg-white p-6 text-center">
+                    <h2 class="text-2xl font-bold">请选择退货方式</h2>
+                    <div class="text-orange-600 text-[11px] mt-2 font-medium bg-orange-50 inline-block px-3 py-1 rounded">
+                        闪电退货 因您信誉良好，平台已自动通过申请
+                    </div>
+                    <div class="text-gray-400 text-xs mt-2">{{form.timer}} 后未寄出将撤销申请</div>
+                </div>
+                <div class="flex p-3 gap-2">
+                    <div class="flex-1 border p-3 rounded-lg text-center opacity-40 bg-gray-50">上门取件</div>
+                    <div class="flex-1 border-2 border-orange-500 p-3 rounded-lg text-center bg-white">
+                        <div class="font-bold text-orange-600">自行寄回</div>
+                        <div class="text-[9px] text-orange-400">需填运单号</div>
+                    </div>
+                </div>
+                <div class="m-3 p-4 bg-white rounded-xl shadow-sm">
+                    <div class="flex">
+                        <div class="w-20 font-bold text-sm">商家地址</div>
+                        <div class="flex-1">
+                            <div class="text-sm font-bold">{{form.name}} {{form.phone}}</div>
+                            <div class="text-sm text-gray-400 mt-1">{{form.address}}</div>
+                            <div class="text-orange-500 text-right text-xs mt-3 font-bold">复制地址</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="fixed bottom-10 w-[359px] px-4">
+                    <div class="bg-stone-800 text-white text-center py-3 rounded-full font-bold">填写发货单号</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref } = Vue;
+        createApp({
+            setup() {
+                const platform = ref('pdd');
+                const form = ref({
+                    name: '京东售后服务中心',
+                    phone: '400-606-5500',
+                    address: '江苏省宿迁市宿豫区洪泽湖路156号京东大厦售后中心 4楼西侧收件',
+                    timer: '6天23小时59分'
+                });
+
+                const saveImage = () => {
+                    const area = document.querySelector("#capture-area");
+                    html2canvas(area, {
+                        scale: 3,
+                        useCORS: true,
+                        borderRadius: 40
+                    }).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = `SF-Return-${platform.value}.png`;
+                        link.href = canvas.toDataURL("image/png");
+                        link.click();
+                    });
+                };
+
+                return { platform, form, saveImage };
+            }
+        }).mount('body');
+    </script>
+</body>
+</html>
