@@ -3,149 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>电商退货详情 - 终极还原版</title>
+    <title>退货详情生成器 - 最终还原版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* 深度匹配 iOS/Android 渲染字体 */
+        /* 强制使用系统级细体，模拟PingFang SC外观 */
         body { 
-            font-family: -apple-system, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; 
-            background: #f4f4f4; 
+            font-family: -apple-system, "SF Pro Text", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif; 
+            background: #f2f2f2; 
             -webkit-font-smoothing: antialiased;
         }
         
-        .content-width { width: 375px; margin: 0 auto; background: #f8f8f8; }
+        /* 375px标准宽度容器 */
+        .content-container { 
+            width: 375px; 
+            background: #f7f7f7; 
+            margin: 0 auto;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+        }
 
-        /* 淘宝/天猫专属配色 */
-        .text-orange-main { color: #FF5000; }
-        .bg-orange-soft { background-color: #FFF8F5; }
-        .border-orange-active { border: 1.5px solid #FFD8C2; }
-        .btn-black-main { background-color: #3d342f; color: #ffffff; }
+        /* 淘宝橙色 */
+        .text-tb-orange { color: #FF5000; }
+        .bg-tb-orange-light { background-color: #FFF8F5; }
+        .border-tb-orange { border-color: #FFD8C2; }
+        
+        /* 按钮深色 */
+        .btn-main-dark { background-color: #3d342f; color: #ffffff; }
 
-        /* 细节尺寸匹配 */
-        .text-xs-9 { font-size: 9px; }
-        .text-xs-11 { font-size: 11px; }
-        .text-sm-13 { font-size: 13px; }
-
-        .card-radius { border-radius: 18px; }
+        /* 字体尺寸精准匹配 */
+        .text-xxs { font-size: 10px; }
+        .text-step { font-size: 11px; }
+        .text-address { font-size: 13px; }
+        
+        /* 方框阴影微调 */
+        .card-shadow { box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        
         .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="p-4 flex flex-col lg:flex-row justify-center items-start gap-8">
 
-    <div class="w-full max-w-sm bg-white p-6 rounded-2xl shadow-xl no-scrollbar overflow-y-auto max-h-[90vh]">
-        <h2 class="text-xl font-bold mb-4 border-b pb-2 text-gray-800">成功案例参数同步</h2>
-        <div class="space-y-4 text-sm">
-            <div>
-                <label class="text-gray-400 block mb-1">退款编号</label>
-                <input v-model="form.refundNo" class="w-full border p-2 rounded bg-gray-50 font-mono">
+    <div class="w-full max-w-md bg-white p-6 rounded-2xl shadow-sm no-scrollbar overflow-y-auto max-h-[90vh]">
+        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2">像素级参数配置</h2>
+        
+        <div class="space-y-4">
+            <div class="p-3 bg-gray-50 rounded-lg space-y-3">
+                <p class="text-sm font-bold text-gray-600">基础信息</p>
+                <input v-model="form.refundNo" placeholder="退款编号" class="w-full border p-2 rounded text-sm font-mono">
+                <input v-model="form.applyTime" placeholder="申请时间" class="w-full border p-2 rounded text-sm">
+                <input v-model="form.countDown" placeholder="倒计时文案" class="w-full border p-2 rounded text-sm">
             </div>
-            <div>
-                <label class="text-gray-400 block mb-1">申请时间</label>
-                <input v-model="form.applyTime" class="w-full border p-2 rounded bg-gray-50">
+
+            <div class="p-3 bg-orange-50 rounded-lg space-y-3">
+                <p class="text-sm font-bold text-orange-700">商品信息</p>
+                <input v-model="form.prodImg" placeholder="商品图链接" class="w-full border p-2 rounded text-sm">
+                <textarea v-model="form.prodName" placeholder="商品标题" class="w-full border p-2 rounded text-sm h-16"></textarea>
             </div>
-            <div>
-                <label class="text-gray-400 block mb-1">商品图 (URL)</label>
-                <input v-model="form.prodImg" class="w-full border p-2 rounded bg-gray-50">
+
+            <div class="p-3 bg-blue-50 rounded-lg space-y-3">
+                <p class="text-sm font-bold text-blue-700">商家地址</p>
+                <textarea v-model="form.address" placeholder="商家地址信息" class="w-full border p-2 rounded text-sm h-20"></textarea>
             </div>
-            <div>
-                <label class="text-gray-400 block mb-1">商家地址</label>
-                <textarea v-model="form.address" class="w-full border p-2 rounded bg-gray-50 h-20"></textarea>
-            </div>
-            <button @click="saveImg" class="w-full bg-orange-600 text-white py-3 rounded-xl font-bold mt-4 shadow-lg active:scale-95 transition">
-                📸 导出成功案例同款截图
+
+            <button @click="captureImage" class="w-full bg-orange-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-orange-700 active:scale-95 transition">
+                📸 生成并保存纯净截图
             </button>
         </div>
     </div>
 
     <div id="app">
-        <div id="capture-node" class="content-width pb-10">
+        <div id="capture-area" class="content-container pb-6">
             
             <div class="bg-white px-4 pt-4 pb-4">
                 <div class="flex items-center justify-between mb-4">
-                    <span class="text-xl font-light">〈</span>
-                    <div class="flex items-center text-xs-11 text-gray-400 gap-1">
-                        <span>商家处理</span> <span class="text-gray-200">▸</span>
-                        <span class="text-black font-bold">2 寄回商品</span> <span class="text-gray-200">▸</span>
-                        <span>3 退款结束</span>
+                    <span class="text-xl font-light text-gray-800">〈</span>
+                    <div class="flex items-center text-step text-gray-400">
+                        <span class="flex items-center">✓商家处理</span>
+                        <span class="mx-1 text-gray-300">▸</span>
+                        <span class="text-black font-bold">2寄回商品</span>
+                        <span class="mx-1 text-gray-300">▸</span>
+                        <span>3退款结束</span>
                     </div>
-                    <span class="font-bold text-lg">···</span>
+                    <span class="font-bold text-lg text-gray-800">···</span>
                 </div>
                 
                 <div class="text-center py-2">
-                    <h1 class="text-[22px] font-bold text-gray-900">请选择退货方式</h1>
-                    <div class="mt-2 text-orange-main text-xs-11 font-bold">
+                    <h1 class="text-[22px] font-bold text-gray-900 leading-tight">请选择退货方式</h1>
+                    <div class="mt-2 text-tb-orange text-[11px] font-bold tracking-tight">
                         <span class="italic font-extrabold mr-1">闪电退货</span>因您信誉良好，平台已自动通过您的售后申请
                     </div>
-                    <div class="text-gray-400 text-xs-11 mt-1">6天23时59分后未寄出将撤销退货申请</div>
+                    <div class="text-gray-400 text-[11px] mt-1">{{form.countDown}}后未寄出将撤销退货申请</div>
                 </div>
             </div>
 
             <div class="flex p-3 gap-2 bg-white">
                 <div class="flex-1 bg-[#f7f7f7] p-3 rounded-xl text-center opacity-40">
-                    <div class="font-bold text-sm-13">上门取件</div>
-                    <div class="text-xs-9 text-gray-400 mt-0.5">2小时上门</div>
+                    <div class="font-bold text-[13px] text-gray-800">上门取件</div>
+                    <div class="text-xxs text-gray-400 mt-0.5">2小时上门</div>
                 </div>
                 <div class="flex-1 bg-[#f7f7f7] p-3 rounded-xl text-center opacity-40">
-                    <div class="font-bold text-sm-13">驿站自寄</div>
-                    <div class="text-xs-9 text-gray-400 mt-0.5">免费包装</div>
+                    <div class="font-bold text-[13px] text-gray-800">驿站自寄</div>
+                    <div class="text-xxs text-gray-400 mt-0.5">免费包装</div>
                 </div>
-                <div class="flex-1 border-2 border-[#FFD8C2] bg-[#FFF8F5] p-3 rounded-xl text-center">
-                    <div class="font-bold text-sm-13 text-orange-main">自行寄回</div>
-                    <div class="text-xs-9 text-orange-main mt-0.5">需填写单号</div>
+                <div class="flex-1 border-[1.5px] border-orange-200 bg-[#FFF8F5] p-3 rounded-xl text-center">
+                    <div class="font-bold text-[13px] text-orange-800">自行寄回</div>
+                    <div class="text-xxs text-orange-400 mt-0.5 font-medium">需填写单号</div>
                 </div>
             </div>
 
-            <div class="mx-3 mt-1.5 p-3 bg-orange-50/40 rounded-lg text-orange-main text-xs-11 border border-orange-100/50">
+            <div class="mx-3 mt-1.5 p-3 bg-orange-50/50 rounded-lg text-orange-600 text-[11px] border border-orange-100/40">
                 需您自行联系快递公司退回，请不要邮寄到付
             </div>
 
-            <div class="mx-3 mt-3 p-4 bg-white card-radius shadow-sm">
-                <div class="flex items-start">
-                    <div class="w-16 font-bold text-sm-13 text-gray-800 shrink-0">商家地址</div>
-                    <div class="flex-1 text-sm-13 text-gray-400 leading-snug pl-1">
+            <div class="mx-3 mt-3 p-4 bg-white rounded-2xl card-shadow">
+                <div class="flex">
+                    <div class="w-16 font-bold text-sm text-gray-800 shrink-0">商家地址</div>
+                    <div class="flex-1 text-address text-gray-400 leading-normal pl-1">
                         {{form.address}}
-                        <div class="text-right text-orange-main mt-3 font-bold text-xs-11">复制地址</div>
+                        <div class="text-right text-tb-orange mt-2.5 font-bold text-xs">复制地址</div>
                     </div>
                 </div>
             </div>
 
             <div class="px-3 py-4">
-                <button class="w-full btn-black-main py-3.5 rounded-xl font-bold text-[15px]">填写单号</button>
+                <button class="w-full btn-main-dark py-3.5 rounded-xl font-bold text-[15px] tracking-wide">填写单号</button>
             </div>
 
-            <div class="h-2 bg-[#f4f4f4]"></div>
+            <div class="h-2 bg-[#f2f2f2]"></div>
 
             <div class="p-4 bg-white flex gap-3">
-                <img :src="form.prodImg" class="w-[62px] h-[62px] rounded-lg object-cover bg-gray-50 shadow-sm">
+                <img :src="form.prodImg" class="w-[62px] h-[62px] rounded-lg object-cover bg-gray-50">
                 <div class="flex-1">
-                    <div class="text-xs-11 font-medium line-clamp-2 leading-tight text-gray-900">{{form.prodName}}</div>
-                    <div class="mt-2.5 flex items-center text-xs-9 text-gray-400 font-medium">
+                    <div class="text-[12px] font-medium line-clamp-2 leading-snug text-gray-900">{{form.prodName}}</div>
+                    <div class="mt-2.5 flex items-center text-xxs text-gray-400 font-medium">
                         <span>88VIP退货包运费</span>
-                        <span class="mx-1.5 opacity-30">|</span>
+                        <span class="mx-1.5 opacity-30 text-gray-300">|</span>
                         <span>运费险</span>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white px-4 pb-12 space-y-4">
-                <div class="flex justify-between items-center text-sm-13">
+            <div class="bg-white px-4 pb-12 space-y-[15px]">
+                <div class="flex justify-between items-center text-[13px]">
                     <span class="text-gray-400 font-medium">协商历史</span>
                     <span class="text-gray-800 font-medium">查看</span>
                 </div>
-                <div class="flex justify-between items-center text-sm-13">
+                <div class="flex justify-between items-center text-[13px]">
                     <span class="text-gray-400 font-medium">退款原因</span>
                     <span class="text-gray-800 font-medium">不想买了</span>
                 </div>
-                <div class="flex justify-between items-center text-sm-13">
+                <div class="flex justify-between items-center text-[13px]">
                     <span class="text-gray-400 font-medium">申请时间</span>
                     <span class="text-gray-800 font-medium">{{form.applyTime}}</span>
                 </div>
-                <div class="flex justify-between items-center text-sm-13">
+                <div class="flex justify-between items-center text-[13px]">
                     <span class="text-gray-400 font-medium">退款编号</span>
                     <div class="flex items-center gap-2">
-                        <span class="text-gray-800 font-mono tracking-tighter">{{form.refundNo}}</span>
+                        <span class="text-gray-800 font-mono tracking-tight">{{form.refundNo}}</span>
                         <span class="text-gray-400 text-[10px] border px-1.5 py-0.5 rounded-sm scale-90">复制</span>
                     </div>
                 </div>
@@ -153,11 +169,11 @@
 
             <div class="bg-white p-3.5 flex gap-3 border-t border-gray-50">
                 <div class="flex flex-col items-center justify-center px-1.5">
-                    <span class="text-orange-main text-lg">🎧</span>
-                    <span class="text-xs-9 text-orange-main font-bold">卖家</span>
+                    <span class="text-orange-500 text-lg">🎧</span>
+                    <span class="text-xxs text-orange-500 font-bold">卖家</span>
                 </div>
-                <button class="flex-1 border border-gray-200 py-2 rounded-full text-sm-13 font-medium text-gray-800">平台介入</button>
-                <button class="flex-1 border border-gray-200 py-2 rounded-full text-sm-13 font-medium text-gray-800">撤销申请</button>
+                <button class="flex-1 border border-gray-200 py-2 rounded-full text-[13px] font-medium text-gray-800">平台介入</button>
+                <button class="flex-1 border border-gray-200 py-2 rounded-full text-[13px] font-medium text-gray-800">撤销申请</button>
             </div>
         </div>
     </div>
@@ -175,20 +191,20 @@
                     countDown: '6天23时59分'
                 });
 
-                const saveImg = () => {
-                    const el = document.querySelector("#capture-node");
+                const captureImage = () => {
+                    const el = document.querySelector("#capture-area");
                     html2canvas(el, { 
                         scale: 3, 
                         useCORS: true,
-                        backgroundColor: '#f8f8f8'
+                        backgroundColor: '#f7f7f7'
                     }).then(canvas => {
-                        const a = document.createElement('a');
-                        a.href = canvas.toDataURL();
-                        a.download = `Successful_Case_${Date.now()}.png`;
-                        a.click();
+                        const link = document.createElement('a');
+                        link.download = `SF_Pure_Return_${Date.now()}.png`;
+                        link.href = canvas.toDataURL("image/png");
+                        link.click();
                     });
                 };
-                return { form, saveImg };
+                return { form, captureImage };
             }
         }).mount('body');
     </script>
